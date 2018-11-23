@@ -1,4 +1,8 @@
-# Particle-In-Cell Skeleton Codes
+# Particle-In-Cell Skeleton Codes (forked by FST)
+
+This fork of the PIC Skeleton code aims to explore the possibility of using openACC to program for Exascale supercomputers.
+
+
 Succinct PIC Implementation 
 
 If you clone this repository, we ask that you please contact Ben Winjum (bwinjum@ucla.edu). The development of our codes relies on grant funding for which we are required to report code usage, and we would greatly appreciate being able to maintain accurate user-number tallies.
