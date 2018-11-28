@@ -3,12 +3,6 @@
 This fork of the PIC Skeleton code aims to explore the possibility of using openACC to program for Exascale supercomputers.
 
 
-Succinct PIC Implementation 
-
-If you clone this repository, we ask that you please contact Ben Winjum (bwinjum@ucla.edu). The development of our codes relies on grant funding for which we are required to report code usage, and we would greatly appreciate being able to maintain accurate user-number tallies.
-
-Please also feel free to send an email to this address if you would like assistance or if you have any questions related to the code base.
-
 ## Quick Start
 
 Welcome! There is a large collection of PIC codes here with a range of complexity. They are all designed to be easy to read, understand, and adapt. 
