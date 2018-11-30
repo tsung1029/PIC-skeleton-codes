@@ -2,6 +2,14 @@
 
 This fork of the PIC Skeleton code aims to explore the possibility of using openACC to program for Exascale supercomputers.
 
+Here are some useful links for those of us who are working on it.
+
+OpenACC specifications:  https://www.openacc.org/specification
+
+PSC presentations on OpenACC (where we will get our original inspirations for loop parallelization):  https://www.psc.edu/training-education/hpc-workshop-series/14-sample-data-articles/2929-xsede-hpc-workshop-gpu-programming-using-openacc-november-6-2018
+
+
+
 
 ## Quick Start
 
