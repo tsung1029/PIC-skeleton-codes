@@ -56,7 +56,7 @@ The basic serial codes do not make use of any parallelism, and are the base code
 
 These codes illustrate how to use shared memory parallelism with OpenMP.  The algorithm used here is the same as that used on the GPU: it divides particles into small 2d tiles and reorders them every time step to avoid data collisions when performing the deposit.  Each tile is controlled by a single thread.  The algorithm is described in detail in Ref. [[4](#ref4)].
 
-### Vectorization 
+### Vectorization
 
 These codes illustrate how to use vectorization with the Intel Processors. Two approaches are illustrated. One uses the Intel SSE2 vector intrinsics, which is a low level data parallel language closely related to the native assembly instructions. This gives the best performance but requires substantial effort and expertise. The other approach uses compiler directives and often requires reorganization of the data structures and loops, but is much simpler.
 
@@ -69,9 +69,12 @@ These codes illustrate how to use domain decomposition with message-passing (MPI
 
 These codes illustrate how to use a hybrid shared/distributed memory algorithm, with a tiled scheme on each shared memory multi-core node implemented with OpenMP, and domain decomposition connecting such nodes implemented with MPI.  The algorithms are described in detail in Refs. [[2-4](#ref2)].
 
-### OpenMP/Vectorization 
+### OpenMP/Vectorization ---  MODIFIED
 
-These codes illustrate how to use hybrid shared memory/vectorization algorithm, with a tiled scheme on each shared memory multi-core node implemented wit OpenMP and vectorization implemented with both SSE vector intrinsics and compiler vectorization. The tiling scheme is described in detail in Ref.[[4](#ref4)]. 
+These codes illustrate how to use hybrid shared memory/vectorization algorithm, with a tiled scheme on each shared memory multi-core node implemented wit OpenMP and vectorization implemented with both SSE vector intrinsics and compiler vectorization. The tiling scheme is described in detail in Ref.[[4](#ref4)].
+
+THIS IS THE STARTING POINT FOR THE OPENACC CODE.
+
 
 ### GPU Codes
 
