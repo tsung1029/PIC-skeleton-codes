@@ -87,49 +87,49 @@
 
 # Makefile gfortran compiler with Linux
 
-FC90 = gfortran
-FC03 = gfortran
-CC = gcc
-
-OPTS90 = -O3
-#OPTS90 = -O3 -fdefault-real-8 -fdefault-double-8
-#OPTS90 = -O3 -fbounds-check -fdefault-real-8 -Wall -std=f95
-
-OPTS03 = -O3
-#OPTS03 = -O3 -fdefault-real-8
-#OPTS03 = -O3 -fbounds-check -fdefault-real-8 -fdefault-double-8 -Wall -std=f2003
-
-CCOPTS = -O3 -Wall -std=c99
-
-#CUDA
-CUDAHOME = /u/local/cuda/5.5
-LOPTS =
-CULIBS = -L$(CUDAHOME)/lib64 -lcuda -lcudart -lcufft
-#CULIBS = -L$(CUDAHOME)/lib -lcuda -lcudart -lcufft
-#NVOPTS = -O3 -Xptxas=-v
-NVOPTS = -O3 -arch sm_20
+#FC90 = gfortran
+#FC03 = gfortran
+#CC = gcc
+#
+#OPTS90 = -O3
+##OPTS90 = -O3 -fdefault-real-8 -fdefault-double-8
+##OPTS90 = -O3 -fbounds-check -fdefault-real-8 -Wall -std=f95
+#
+#OPTS03 = -O3
+##OPTS03 = -O3 -fdefault-real-8
+##OPTS03 = -O3 -fbounds-check -fdefault-real-8 -fdefault-double-8 -Wall -std=f2003
+#
+#CCOPTS = -O3 -Wall -std=c99
+#
+##CUDA
+#CUDAHOME = /u/local/cuda/5.5
+#LOPTS =
+#CULIBS = -L$(CUDAHOME)/lib64 -lcuda -lcudart -lcufft
+##CULIBS = -L$(CUDAHOME)/lib -lcuda -lcudart -lcufft
+##NVOPTS = -O3 -Xptxas=-v
+#NVOPTS = -O3 -arch sm_20
 
 # Makefile PGI compiler with Linux
 
-#FC90 = pgf90
-#FC03 = pgf90
-#CC = gcc
+FC90 = pgf90 -Mcuda -acc -Minfo=accel
+FC03 = pgf90 -Mcuda -acc -Minfo=accel
+CC = pgcc -acc -Minfo=accel -ta=tesla,managed,cuda9.2
 
-#OPTS90 = -O3
-#OPTS90 = -O3 -r8
-#OPTS90 = -O3 -Mbounds -r8 -Mstandard
+OPTS90 = -O3
+OPTS90 = -O3 -r8
+OPTS90 = -O3 -Mbounds -r8 -Mstandard
 
-#OPTS03 = -O3
-#OPTS03 = -O3 -r8
-#OPTS03 = -O3 -Mbounds -r8 -Mstandard
+OPTS03 = -O3
+OPTS03 = -O3 -r8
+OPTS03 = -O3 -Mbounds -r8 -Mstandard
 
-#CCOPTS = -O3 -Wall -std=c99
+CCOPTS = -O3
 
-#CUDA
-#CUDAHOME = /u/local/cuda/5.5
-#LOPTS =
-#CULIBS = -L$(CUDAHOME)/lib64 -lcudart -lcufft
-#NVOPTS = -O3 -arch sm_20
+# # CUDA
+CUDAHOME = /opt/packages/cuda/9.2
+LOPTS =
+CULIBS = -L$(CUDAHOME)/lib64 -lcudart -lcufft
+NVOPTS = -O3 -arch sm_60
 
 # Makefile Cray compiler with Linux
 
@@ -153,13 +153,18 @@ NVOPTS = -O3 -arch sm_20
 
 # Linkage rules
 
-all : fgpupic2 cgpupic2 f03gpupic2
+all : fgpupic2 cgpupic2 f03gpupic2 caccpic2
 
 fgpupic2 : fgpupic2.o gpulib2.o gpupush2.o gpufft2.o fpush2.o \
            dtimer.o
 	$(FC90) $(OPTS90) $(LOPTS) -o fgpupic2 fgpupic2.o \
 	gpulib2.o gpupush2.o gpufft2.o fpush2.o gpulib2_h.o \
 	gpupush2_h.o gpufft2_h.o push2_h.o dtimer.o $(CULIBS)
+
+caccpic2 : cgpupic2.o gpulib2.o cudagpupush2.o gpufft2.o cpush2.o \
+           dtimer.o caccpush2.o
+	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
+	gpulib2.o cudagpupush2.o gpufft2.o cpush2.o dtimer.o $(CULIBS) -lm
 
 cgpupic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
            dtimer.o
@@ -179,6 +184,9 @@ dtimer.o : dtimer.c
 
 gpulib2.o : gpulib2.cu
 	nvcc $(NVOPTS) -c gpulib2.cu -I$(CUDAHOME)/include
+
+cudagpupush2.o : cudagpupush2.cu
+	nvcc $(NVOPTS) -c cudagpupush2.cu -I$(CUDAHOME)/include
 
 gpupush2.o : gpupush2.cu
 	nvcc $(NVOPTS) -c gpupush2.cu -I$(CUDAHOME)/include
@@ -210,6 +218,9 @@ fpush2.o : push2.f
 push2_h.o : push2_h.f90
 	$(FC90) $(OPTS90) -o push2_h.o -c push2_h.f90
 
+caccpush2.o : accpush2.c
+	$(CC) $(CCOPTS) -o caccpush2.o -c accpush2.c
+
 cpush2.o : push2.c
 	$(CC) $(CCOPTS) -o cpush2.o -c push2.c
 
@@ -226,4 +237,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fgpupic2 cgpupic2 f03gpupic2
+	rm -f fgpupic2 cgpupic2 f03gpupic2 caccpic2
