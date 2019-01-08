@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
-#include "vmpush2.h"
+#include "gpupush2.h"
 
 /*--------------------------------------------------------------------*/
-double ranorm() {
+double _ranorm() {
 /* this program calculates a random number y from a gaussian distribution
    with zero mean and unit variance, according to the method of
    mueller and box:
@@ -73,7 +73,7 @@ local data                                                              */
 }
 
 /*--------------------------------------------------------------------*/
-void cdistr2(float part[], float vtx, float vty, float vdx, float vdy,
+void _cdistr2(float part[], float vtx, float vty, float vdx, float vdy,
              int npx, int npy, int idimp, int nop, int nx, int ny,
              int ipbc) {
 /* for 2d code, this subroutine calculates initial particle co-ordinates
@@ -145,7 +145,7 @@ local data                                                            */
 }
 
 /*--------------------------------------------------------------------*/
-void cdblkp2l(float part[], int kpic[], int *nppmx, int idimp, int nop,
+void _cdblkp2l(float part[], int kpic[], int *nppmx, int idimp, int nop,
               int mx, int my, int mx1, int mxy1, int *irc) {
 /* this subroutine finds the maximum number of particles in each tile of
    mx, my to calculate size of segmented particle array ppart
@@ -202,7 +202,7 @@ local data                                                            */
 }
 
 /*--------------------------------------------------------------------*/
-void cppmovin2lt(float part[], float ppart[], int kpic[], int nppmx,
+void _cppmovin2lt(float part[], float ppart[], int kpic[], int nppmx,
                  int idimp, int nop, int mx, int my, int mx1, int mxy1,
                  int *irc) {
 /* this subroutine sorts particles by x,y grid in tiles of mx, my
@@ -319,7 +319,7 @@ local data                                                            */
 }
 
 /*--------------------------------------------------------------------*/
-void cppcheck2lt(float ppart[], int kpic[], int idimp, int nppmx, int nx,
+void _cppcheck2lt(float ppart[], int kpic[], int idimp, int nppmx, int nx,
                  int ny, int mx, int my, int mx1, int my1, 
                  int *irc) {
 /* this subroutine performs a sanity check to make sure particles sorted
@@ -379,7 +379,8 @@ private(j,k,noff,moff,npp,nn,mm,ist,edgelx,edgely,edgerx,edgery,dx,dy)
 }
 
 /*--------------------------------------------------------------------*/
-void cgppush2lt(float ppart[], float fxy[], int kpic[], float qbm,
+// used to be cgppush2lt
+void cgpuppush2l(float ppart[], float fxy[], int kpic[], float qbm,
                 float dt, float *ek, int idimp, int nppmx, int nx,
                 int ny, int mx, int my, int nxv, int nyv, int mx1,
                 int mxy1, int ipbc) {
@@ -437,7 +438,7 @@ local data                                                            */
    double sum1, sum2;
    mxv = mx + 1;
    qtm = qbm*dt;
-   sum2 = 0.0;
+   //sum2 = 0.0;
 /* set boundary values */
    edgelx = 0.0f;
    edgely = 0.0f;
@@ -457,10 +458,10 @@ local data                                                            */
 /* if ((mx >= MXV) || (my >= MYV))   */
 /*    return;                        */
 /* loop over tiles */
-#pragma omp parallel for \
+#pragma acc parallel loop gang vector vector_length(16) \
 private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,dx,dy,vx, \
 vy,sum1,sfxy) \
-reduction(+:sum2)
+deviceptr(ppart,fxy,kpic,ek)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -536,10 +537,10 @@ reduction(+:sum2)
          ppart[j+2*nppmx+npoff] = vx;
          ppart[j+3*nppmx+npoff] = vy;
       }
-      sum2 += sum1;
+      ek[k] = 0.125f*sum1;
    }
 /* normalize kinetic energy */
-   *ek += 0.125f*sum2;
+//   *ek += 0.125f*sum2;
    return;
 #undef MXV
 #undef MYV
@@ -1376,7 +1377,8 @@ reduction(+:sum2)
 }
 
 /*--------------------------------------------------------------------*/
-void cgppost2lt(float ppart[], float q[], int kpic[], float qm,
+// used to be cgppost2lt
+void cgpu2ppost2l(float ppart[], float q[], int kpic[], float qm,
                 int nppmx, int idimp, int mx, int my, int nxv, int nyv,
                 int mx1, int mxy1) {
 /* for 2d code, this subroutine calculates particle charge density
@@ -1417,8 +1419,9 @@ local data                                                            */
 /* if ((mx >= MXV) || (my >= MYV))   */
 /*    return;                        */
 /* loop over tiles */
-#pragma omp parallel for \
-private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
+#pragma acc parallel loop gang worker vector vector_length(16) \
+private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq) \
+deviceptr(ppart,q,kpic)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -1426,10 +1429,12 @@ private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
       npp = kpic[k];
       npoff = idimp*nppmx*k;
 /* zero out local accumulator */
+//#pragma acc loop independent
       for (j = 0; j < mxv*(my+1); j++) {
          sq[j] = 0.0f;
       }
 /* loop over particles in tile */
+//#pragma acc loop independent
       for (j = 0; j < npp; j++) {
 /* find interpolation weights */
          x = ppart[j+npoff];
@@ -1457,6 +1462,7 @@ private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
       mm = nyv - moff;
       nn = mx < nn ? mx : nn;
       mm = my < mm ? my : mm;
+//#pragma acc loop independent
       for (j = 1; j < mm; j++) {
          for (i = 1; i < nn; i++) {
             q[i+noff+nxv*(j+moff)] += sq[i+mxv*j];
@@ -1465,21 +1471,23 @@ private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
 /* deposit charge to edge points in global array */
       mm = nyv - moff;
       mm = my+1 < mm ? my+1 : mm;
+//#pragma acc loop independent
       for (i = 1; i < nn; i++) {
-#pragma omp atomic
+#pragma acc atomic
          q[i+noff+nxv*moff] += sq[i];
          if (mm > my) {
-#pragma omp atomic
+#pragma acc atomic
             q[i+noff+nxv*(mm+moff-1)] += sq[i+mxv*(mm-1)];
          }
       }
       nn = nxv - noff;
       nn = mx+1 < nn ? mx+1 : nn;
+//#pragma acc loop independent
       for (j = 0; j < mm; j++) {
-#pragma omp atomic
+#pragma acc atomic
          q[noff+nxv*(j+moff)] += sq[mxv*j];
          if (nn > mx) {
-#pragma omp atomic
+#pragma acc atomic
             q[nn+noff-1+nxv*(j+moff)] += sq[nn-1+mxv*j];
          }
       }
@@ -1717,9 +1725,10 @@ local data                                                            */
 /* find and count particles leaving tiles and determine destination */
 /* update ppart, ihole, ncl */
 /* loop over tiles */
-#pragma omp parallel for \
-private(j,k,noff,moff,npp,npoff,nn,mm,ih,nh,ist,dx,dy,edgelx,edgely, \
-edgerx,edgery)
+//#pragma acc parallel loop gang vector vector_length(16) \
+//private(j,k,noff,moff,npp,npoff,nn,mm,ih,nh,ist,dx,dy,edgelx,edgely, \
+//edgerx,edgery) \
+//deviceptr(ppart,kpic,ncl,ihole,irc)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -1800,19 +1809,25 @@ edgerx,edgery)
       }
 /* set error and end of file flag */
       if (nh > 0) {
+//#pragma acc atomic
          *irc = ih;
          ih = -ih;
       }
       ihole[2*(ntmax+1)*k] = ih;
    }
 /* ihole overflow */
-   if (*irc > 0)
-      return;
+//#pragma acc parallel deviceptr(irc) \
+//num_gangs(1) vector_length(1)
+//   {
+//   if (*irc > 0)
+//      return;
+//   }
 
 /* buffer particles that are leaving tile: update ppbuff, ncl */
 /* loop over tiles */
-#pragma omp parallel for \
-private(i,j,k,npoff,nboff,isum,ist,nh,ip,j1,ii)
+//#pragma acc parallel loop gang vector vector_length(16) \
+//private(i,j,k,npoff,nboff,isum,ist,nh,ip,j1,ii) \
+//deviceptr(ppart,ppbuff,ncl,ihole)
    for (k = 0; k < mxy1; k++) {
       npoff = idimp*nppmx*k;
       nboff = idimp*npbmx*k;
@@ -1844,17 +1859,19 @@ private(i,j,k,npoff,nboff,isum,ist,nh,ip,j1,ii)
       }
 /* set error */
       if (ip > 0)
+//#pragma acc atomic
          *irc = ncl[7+8*k];
    }
-/* ppbuff overflow */
-   if (*irc > 0)
-      return;
+///* ppbuff overflow */
+//   if (*irc > 0)
+//      return;
 
 /* copy incoming particles from buffer into ppart: update ppart, kpic */
 /* loop over tiles */
-#pragma omp parallel for \
-private(i,j,k,ii,kk,npp,npoff,nboff,kx,ky,kl,kr,kxl,kxr,ih,nh,nn, \
-ncoff,ist,j1,j2,ip,ks)
+//#pragma acc parallel loop gang vector vector_length(16) \
+//private(i,j,k,ii,kk,npp,npoff,nboff,kx,ky,kl,kr,kxl,kxr,ih,nh,nn, \
+//ncoff,ist,j1,j2,ip,ks) \
+//deviceptr(ppart,ppbuff,kpic,ncl,ihole,irc)
    for (k = 0; k < mxy1; k++) {
       npp = kpic[k];
       npoff = idimp*nppmx*k;
@@ -1924,6 +1941,7 @@ ncoff,ist,j1,j2,ip,ks)
       }
 /* set error */
       if (ist > 0)
+//#pragma acc atomic
          *irc = j1+1;
 /* fill up remaining holes in particle array with particles from bottom */
 /* holes with locations great than npp-ip do not need to be filled      */
@@ -2143,7 +2161,8 @@ ncoff,ist,j1,j2,ip,ks)
 }
 
 /*--------------------------------------------------------------------*/
-void cvpporder2lt(float ppart[], float ppbuff[], int kpic[], int ncl[],
+// used to be cvpporder2lt
+void _cgpuppord2l(float ppart[], float ppbuff[], int kpic[], int ncl[],
                   int ihole[], int idimp, int nppmx, int nx, int ny,
                   int mx, int my, int mx1, int my1, int npbmx,
                   int ntmax, int *irc) {
@@ -2190,9 +2209,10 @@ local data                                                            */
 /* find and count particles leaving tiles and determine destination */
 /* update ppart, ihole, ncl */
 /* loop over tiles */
-#pragma omp parallel for \
-private(j,k,noff,moff,npp,npoff,nn,mm,ih,nh,ist,dx,dy,edgelx,edgely, \
-edgerx,edgery)
+//#pragma acc parallel loop seq \
+//private(j,k,noff,moff,npp,npoff,nn,mm,ih,nh,ist,dx,dy,edgelx,edgely, \
+//edgerx,edgery) \
+//deviceptr(ppart,ppbuff,kpic,ncl,ihole,irc)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -2278,19 +2298,21 @@ edgerx,edgery)
       }
       ihole[2*(ntmax+1)*k] = ih;
    }
-/* ihole overflow */
-   if (*irc > 0)
-      return;
+///* ihole overflow */
+//   if (*irc > 0)
+//      return;
 
 /* buffer particles that are leaving tile: update ppbuff, ncl */
 /* loop over tiles */
-#pragma omp parallel for \
-private(i,j,k,m,kxs,lb,npoff,nboff,ist,nh,ip,ipp,nps,joff,j1,ii,sncl, \
-ks,n)
+//#pragma acc parallel loop seq \
+//private(i,j,k,m,kxs,lb,npoff,nboff,ist,nh,ip,ipp,nps,joff,j1,ii,sncl, \
+//ks,n) \
+//deviceptr(ppart,ppbuff,kpic,ncl,ihole,irc)
    for (k = 0; k < mxy1; k++) {
       npoff = idimp*nppmx*k;
       nboff = idimp*npbmx*k;
 /* find address offset for ordered ppbuff array */
+//#pragma acc loop seq
       for (j = 0; j < 8; j++) {
          sncl[j] = ncl[j+8*k];
          ks[j] = j;
@@ -2305,6 +2327,7 @@ ks,n)
          }     
          kxs <<= 1;
       }
+//#pragma acc loop seq
       for (j = 0; j < 8; j++) {
          sncl[j] -= ncl[j+8*k];
       }
@@ -2368,15 +2391,16 @@ ks,n)
       if (ip > 0)
          *irc = ncl[7+8*k];
    }
-/* ppbuff overflow */
-   if (*irc > 0)
-      return;
+///* ppbuff overflow */
+//   if (*irc > 0)
+//      return;
 
 /* copy incoming particles from buffer into ppart: update ppart, kpic */
 /* loop over tiles */
-#pragma omp parallel for \
-private(i,j,k,m,ii,kk,in,npp,npoff,nboff,ipp,joff,nps,kx,ky,kl,kr,kxl, \
-kxr,ih,nh,nn,mm,ncoff,ist,j1,j2,ip,ks,n)
+//#pragma acc parallel loop seq \
+//private(i,j,k,m,ii,kk,in,npp,npoff,nboff,ipp,joff,nps,kx,ky,kl,kr,kxl, \
+//kxr,ih,nh,nn,mm,ncoff,ist,j1,j2,ip,ks,n) \
+//deviceptr(ppart,ppbuff,kpic,ncl,ihole,irc)
    for (k = 0; k < mxy1; k++) {
       npp = kpic[k];
       npoff = idimp*nppmx*k;
@@ -2914,8 +2938,8 @@ local data                                                 */
 }
 
 /*--------------------------------------------------------------------*/
-void cvmpois22(float complex q[], float complex fxy[], int isign,
-               float complex ffc[], float ax, float ay, float affp,
+// used to be cvmpois22
+void cgpupois22t(float complex qt[], float complex fxyt[], float complex ffct[],
                float *we, int nx, int ny, int nxvh, int nyv, int nxhd,
                int nyhd) {
 /* this subroutine solves 2d poisson's equation in fourier space for
@@ -2926,128 +2950,153 @@ void cvmpois22(float complex q[], float complex fxy[], int isign,
    approximate flop count is: 26*nxc*nyc + 12*(nxc + nyc)
    where nxc = nx/2 - 1, nyc = ny/2 - 1
    equation used is:
-   fx[ky][kx] = -sqrt(-1)*kx*g[ky][kx]*s[ky][kx]*q[ky][kx],
-   fy[ky][kx] = -sqrt(-1)*ky*g[ky][kx]*s[ky][kx]*q[ky][kx],
+   fx[kx][ky] = -sqrt(-1)*kx*g[kx][ky]*s[kx][ky]*q[kx][ky],
+   fy[kx][ky] = -sqrt(-1)*ky*g[kx][ky]*s[kx][ky]*q[kx][ky],
    where kx = 2pi*j/nx, ky = 2pi*k/ny, and j,k = fourier mode numbers,
-   g[ky][kx] = (affp/(kx**2+ky**2))*s(kx,ky),
-   s[ky][kx] = exp(-((kx*ax)**2+(ky*ay)**2)/2), except for
+   g[kx][ky] = (affp/(kx**2+ky**2))*s[kx,ky],
+   s[kx][ky] = exp(-((kx*ax)**2+(ky*ay)**2)/2), except for
    fx(kx=pi) = fy(kx=pi) = fx(ky=pi) = fy(ky=pi) = 0, and
    fx(kx=0,ky=0) = fy(kx=0,ky=0) = 0.
-   q[k][j] = complex charge density for fourier mode (j,k)
-   fxy[k][j][0] = x component of complex force/charge,
-   fxy[k][j][1] = y component of complex force/charge,
-   all for fourier mode (j,k)
-   if isign = 0, form factor array is prepared
-   if isign is not equal to 0, force/charge is calculated
-   cimag(ffc[k][j]) = finite-size particle shape factor s
-   for fourier mode (j,k)
-   creal(ffc[k][j]) = potential green's function g
-   for fourier mode (j,k)
-   ax/ay = half-width of particle in x/y direction
-   affp = normalization constant = nx*ny/np, where np=number of particles
+   qt[j][k] = complex charge density for fourier mode (k,j)
+   fxyt[j][0][k] = x component of complex force/charge,
+   fxyt[j][1][k] = y component of complex force/charge,
+   all for fourier mode (k,j)
+   caimag(ffct[j][k]) = finite-size particle shape factor s
+   creal(ffct([j][k])) = potential green's function g
+   for fourier mode (k,j)
    electric field energy is also calculated, using
-   we = nx*ny*sum((affp/(kx**2+ky**2))*|q[ky][kx]*s[ky][kx]|**2)
+   we = nx*ny*sum((affp/(kx**2+ky**2))*|q[kx][ky]*s[kx][ky]|**2)
    nx/ny = system length in x/y direction
-   nxvh = first dimension of field arrays, must be >= nxh
-   nyv = second dimension of field arrays, must be >= ny
-   nxhd = first dimension of form factor array, must be >= nxh
-   nyhd = second dimension of form factor array, must be >= nyh
-   vectorizable version
+   nxvh = second dimension of field arrays, must be >= nxh+1
+   nyv = first dimension of field arrays, must be >= ny
+   nxhd = second dimension of form factor array, must be >= nxh
+   nyhd = first dimension of form factor array, must be >= nyh
 local data                                                 */
-   int nxh, nyh, j, k, k1, kk, kj;
-   float dnx, dny, dkx, dky, at1, at2, at3, at4;
-   float complex zero, zt1, zt2;
-   double wp, sum1;
+   int nxh, nyh, nxh1, j, k, k1, jj, jk, jk2;
+   float dnx, dny, dkx, at1, at2, at3, at4;
+   float complex zero, zt1, zt2, zt3;
+   double wp, sum1,sum2;
    nxh = nx/2;
    nyh = 1 > ny/2 ? 1 : ny/2;
    dnx = 6.28318530717959/(float) nx;
    dny = 6.28318530717959/(float) ny;
    zero = 0.0 + 0.0*_Complex_I;
-   if (isign != 0)
-      goto L30;
-/* prepare form factor array */
-   for (k = 0; k < nyh; k++) {
-      dky = dny*(float) k;
-      kk = nxhd*k;
-      at1 = dky*dky;
-      at2 = pow((dky*ay),2);
-      for (j = 0; j < nxh; j++) {
-         dkx = dnx*(float) j;
-         at3 = dkx*dkx + at1;
-         at4 = exp(-0.5*(pow((dkx*ax),2) + at2));
-         if (at3==0.0) {
-            ffc[j+kk] = affp + 1.0*_Complex_I;
-         }
-         else {
-            ffc[j+kk] = (affp*at4/at3) + at4*_Complex_I;
-         }
-      }
-   }
-   return;
-/* calculate force/charge and sum field energy */
-L30: sum1 = 0.0;
-#pragma omp parallel for \
-private(j,k,k1,kk,kj,dky,at1,at2,at3,zt1,zt2,wp) \
-reduction(+:sum1)
+
+#pragma acc parallel loop gang vector vector_length(16) \
+private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp) \
+deviceptr(qt,fxyt,ffct,we)
+//reduction(+:sum1)
 /* mode numbers 0 < kx < nx/2 and 0 < ky < ny/2 */
-   for (k = 1; k < nyh; k++) {
-      k1 = ny - k;
-      dky = dny*(float) k;
-      kk = nxhd*k;
-      kj = nxvh*k;
-      k1 = nxvh*ny - kj;
+   for (j = 1; j < nxh; j++) {
+      dkx = dnx*(float) j;
+      jj = nyhd*j;
+      jk = nyv*j;
+      jk2 = jk*2;
       wp = 0.0;
 #pragma ivdep
-      for (j = 1; j < nxh; j++) {
-         at1 = crealf(ffc[j+kk])*cimagf(ffc[j+kk]);
-         at2 = at1*dnx*(float) j;
-         at3 = dky*at1;
-         zt1 = cimagf(q[j+kj]) - crealf(q[j+kj])*_Complex_I;
-         zt2 = cimagf(q[j+k1]) - crealf(q[j+k1])*_Complex_I;
-         fxy[2*j+2*kj] = at2*zt1;
-         fxy[1+2*j+2*kj] = at3*zt1;
-         fxy[2*j+2*k1] = at2*zt2;
-         fxy[1+2*j+2*k1] = -at3*zt2;
-         at1 = at1*(q[j+kj]*conjf(q[j+kj]) + q[j+k1]*conjf(q[j+k1]));
+      for (k = 1; k < nyh; k++) {
+         k1 = nyv - k;
+         at1 = crealf(ffct[k+jj])*cimagf(ffct[k+jj]);
+         at2 = at1*dkx;
+         at3 = at1*dny*(float) k;
+         zt1 = cimagf(qt[k+jk]) - crealf(qt[k+jk])*_Complex_I;
+         zt2 = cimagf(qt[jk+k1]) - crealf(qt[jk+k1])*_Complex_I;
+         fxyt[k+jk2] = at2*zt1;
+         fxyt[k+nyv+jk2] = at3*zt1;
+         fxyt[jk2+k1] = at2*zt2;
+         fxyt[k1+nyv+jk2] = -at3*zt2;
+         at1 = at1*(zt1*conjf(zt1) + zt2*conjf(zt2));
          wp += (double) at1;
       }
-      at1 = crealf(ffc[kk])*cimagf(ffc[kk]);
-      at3 = at1*dny*(float) k;
-      zt1 = cimagf(q[kj]) - crealf(q[kj])*_Complex_I;
-      fxy[2*kj] = zero;
-      fxy[1+2*kj] = at3*zt1;
-      fxy[2*k1] = zero;
-      fxy[1+2*k1] = zero;
-      at1 = at1*(q[kj]*conjf(q[kj]));
+      at1 = crealf(ffct[jj])*cimagf(ffct[jj]);
+      at3 = at1*dnx;
+      zt1 = cimagf(qt[jk]) - crealf(qt[jk])*_Complex_I;
+      fxyt[jk2] = at3*zt1;
+      fxyt[nyv+jk2] = zero;
+      fxyt[nyh+jk2] = zero;
+      fxyt[nyh+nyv+jk2] = zero;
+      at1 = at1*(zt1*conjf(zt1));
       wp += (double) at1;
-      sum1 += wp;
+      we[j] = (float) wp;
    }
-   wp = 0.0;
+   //wp = 0.0;
 /* mode numbers ky = 0, ny/2 */
-   k1 = 2*nxvh*nyh;
-#pragma ivdep
+#pragma acc parallel vector_length(16) \
+private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp,sum1) \
+deviceptr(qt,fxyt,ffct,we)
+   {
+   k1 = nyh;
+#pragma acc loop gang vector //reduction(+:sum1)
    for (j = 1; j < nxh; j++) {
-      at1 = crealf(ffc[j])*cimagf(ffc[j]);
+      jj = nyhd*j;
+      jk = nyv*j;
+      jk2 = 2*jk;
+      at1 = crealf(ffct[jj])*cimagf(ffct[jj]);
       at2 = at1*dnx*(float) j;  
-      zt1 = cimagf(q[j]) - crealf(q[j])*_Complex_I;
-      fxy[2*j] = at2*zt1;
-      fxy[1+2*j] = zero;
-      fxy[2*j+k1] = zero;
-      fxy[1+2*j+k1] = zero;
-      at1 = at1*(q[j]*conjf(q[j]));
-      wp += (double) at1;
+      zt1 = cimagf(qt[jk]) - crealf(qt[jk])*_Complex_I;
+      zt3 = at3*zt1;
+      fxyt[jk] = zt3;
+      fxyt[nyv+jk2] = zero;
+      fxyt[k1+jk2] = zero;
+      fxyt[k1+nyv+jk2] = zero;
+
+      at1 = at1*(zt1*conjf(zt1));
+      we[j] += (float) at1;
    }
-   fxy[0] = zero;
-   fxy[1] = zero;
-   fxy[k1] = zero;
-   fxy[1+k1] = zero;
-   sum1 += wp;
-   *we = sum1*(float) (nx*ny);
+   }
+#pragma acc data create(sum1)
+{
+/* mode numbers kx = 0, nx/2 */
+#pragma acc parallel vector_length(16) \
+private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp) \
+deviceptr(qt,fxyt,ffct,we) present(sum1)
+   {
+   nxh1 = 2*nyv*nxh;
+   sum1 = 0.0;
+#pragma acc loop gang vector reduction(+:sum1)
+   for (k = 1; k < nyh; k++) {
+      k1 = ny - k;
+      at1 = crealf(ffct[k])*cimagf(ffct[k]);
+      at3 = at1*dny*(float) k;  
+      zt1 = cimagf(qt[k]) - crealf(qt[k])*_Complex_I;
+      zt3 = at3*zt1;
+      fxyt[k] = zero;
+      fxyt[k+nyv] = zt3;
+      fxyt[k1] = zero;
+
+      fxyt[k1+nyv] = zt3;
+      fxyt[k+nxh1] = zero;
+      fxyt[k+nyv+nxh1] = zero;
+      fxyt[k1+nxh1] = zero;
+      fxyt[k1+nyv+nxh1] = zero;
+      sum1 += (double) (at1*(zt1*conjf(zt1)));
+   }
+#pragma acc loop gang vector
+   for ( j = 1; j < nxh; j++ )
+      we[j] *= (float) (nx*ny);
+   }
+
+#pragma acc parallel num_gangs(1) vector_length(1) \
+deviceptr(we,fxyt) present(sum1) private(nxh1,k1)
+   {
+   we[0] = (float) (sum1) * (float) (nx*ny);
+   k1 = 2*nxvh*nyh;
+   nxh1 = 2*nyv*nxh;
+   fxyt[0] = zero;
+   fxyt[nyv] = zero;
+   fxyt[k1] = zero;
+   fxyt[k1+nyv] = zero;
+   fxyt[nxh1] = zero;
+   fxyt[nxh1+nyv] = zero;
+   fxyt[k1+nxh1] = zero;
+   fxyt[k1+nyv+nxh1] = zero;
+   }
+}
    return;
 }
 
 /*--------------------------------------------------------------------*/
-void cwfft2rinit(int mixup[], float complex sct[], int indx, int indy, 
+void _cwfft2rinit(int mixup[], float complex sct[], int indx, int indy, 
                  int nxhyd, int nxyhd) {
 /* this subroutine calculates tables needed by a two dimensional
    real to complex fast fourier transform and its inverse.
@@ -3821,7 +3870,7 @@ void cwfft2rvm2(float complex f[], int isign, int mixup[],
 /* Interfaces to Fortran */
 
 /*--------------------------------------------------------------------*/
-void cdistr2_(float *part, float *vtx, float *vty, float *vdx, float *vdy,
+void _cdistr2_(float *part, float *vtx, float *vty, float *vdx, float *vdy,
               int *npx, int *npy, int *idimp, int *nop, int *nx, int *ny,
               int *ipbc) {
    cdistr2(part,*vtx,*vty,*vdx,*vdy,*npx,*npy,*idimp,*nop,*nx,*ny,*ipbc);
@@ -3829,14 +3878,14 @@ void cdistr2_(float *part, float *vtx, float *vty, float *vdx, float *vdy,
 }
 
 /*--------------------------------------------------------------------*/
-void cdblkp2l_(float *part, int *kpic, int *nppmx, int *idimp, int *nop,
+void _cdblkp2l_(float *part, int *kpic, int *nppmx, int *idimp, int *nop,
                int *mx, int *my, int *mx1, int *mxy1, int *irc) {
    cdblkp2l(part,kpic,nppmx,*idimp,*nop,*mx,*my,*mx1,*mxy1,irc);
    return;
 }
 
 /*--------------------------------------------------------------------*/
-void cppmovin2lt_(float *part, float *ppart, int *kpic, int *nppmx,
+void _cppmovin2lt_(float *part, float *ppart, int *kpic, int *nppmx,
                   int *idimp, int *nop, int *mx, int *my, int *mx1,
                   int *mxy1, int *irc) {
    cppmovin2lt(part,ppart,kpic,*nppmx,*idimp,*nop,*mx,*my,*mx1,*mxy1,
@@ -3854,22 +3903,22 @@ void cppmovin2ltp_(float *part, float *ppart, int *kpic, int *kp,
 }
 
 /*--------------------------------------------------------------------*/
-void cppcheck2lt_(float *ppart, int *kpic, int *idimp, int *nppmx,
+void _cppcheck2lt_(float *ppart, int *kpic, int *idimp, int *nppmx,
                   int *nx, int *ny, int *mx, int *my, int *mx1,
                   int *my1, int *irc) {
    cppcheck2lt(ppart,kpic,*idimp,*nppmx,*nx,*ny,*mx,*my,*mx1,*my1,irc);
    return;
 }
 
-/*--------------------------------------------------------------------*/
-void cgppush2lt_(float *ppart, float *fxy, int *kpic, float *qbm,
-                 float *dt, float *ek, int *idimp, int *nppmx, int *nx,
-                 int *ny, int *mx, int *my, int *nxv, int *nyv,
-                 int *mx1, int *mxy1, int *ipbc) {
-   cgppush2lt(ppart,fxy,kpic,*qbm,*dt,ek,*idimp,*nppmx,*nx,*ny,*mx,*my,
-              *nxv,*nyv,*mx1,*mxy1,*ipbc);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//void cgppush2lt_(float *ppart, float *fxy, int *kpic, float *qbm,
+//                 float *dt, float *ek, int *idimp, int *nppmx, int *nx,
+//                 int *ny, int *mx, int *my, int *nxv, int *nyv,
+//                 int *mx1, int *mxy1, int *ipbc) {
+//   cgppush2lt(ppart,fxy,kpic,*qbm,*dt,ek,*idimp,*nppmx,*nx,*ny,*mx,*my,
+//              *nxv,*nyv,*mx1,*mxy1,*ipbc);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 void cgppushf2lt_(float *ppart, float *fxy, int *kpic, int *ncl,
@@ -3903,15 +3952,15 @@ void cvgppushf2lt_(float *ppart, float *fxy, int *kpic, int *ncl,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-void cgppost2lt_(float *ppart, float *q, int *kpic, float *qm,
-                 int *nppmx, int *idimp, int *mx, int *my, int *nxv,
-                 int *nyv, int *mx1, int *mxy1) {
-   cgppost2lt(ppart,q,kpic,*qm,*nppmx,*idimp,*mx,*my,*nxv,*nyv,*mx1,
-              *mxy1);
-   return;
-}
-
+///*--------------------------------------------------------------------*/
+//void cgppost2lt_(float *ppart, float *q, int *kpic, float *qm,
+//                 int *nppmx, int *idimp, int *mx, int *my, int *nxv,
+//                 int *nyv, int *mx1, int *mxy1) {
+//   cgppost2lt(ppart,q,kpic,*qm,*nppmx,*idimp,*mx,*my,*nxv,*nyv,*mx1,
+//              *mxy1);
+//   return;
+//}
+//
 /*--------------------------------------------------------------------*/
 void cvgppost2lt_(float *ppart, float *q, int *kpic, float *qm,
                   int *nppmx, int *idimp, int *mx, int *my, int *nxv,
@@ -3927,15 +3976,15 @@ void cviscan2_(int *isdata, int *mb, int *nths) {
    return;
 }
 
-/*--------------------------------------------------------------------*/
-void cpporder2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
-                  int *ihole, int *idimp, int *nppmx, int *nx, int *ny,
-                  int *mx, int *my, int *mx1, int *my1, int *npbmx,
-                  int *ntmax, int *irc) {
-   cpporder2lt(ppart,ppbuff,kpic,ncl,ihole,*idimp,*nppmx,*nx,*ny,*mx,
-                *my,*mx1,*my1,*npbmx,*ntmax,irc);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//void cpporder2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
+//                  int *ihole, int *idimp, int *nppmx, int *nx, int *ny,
+//                  int *mx, int *my, int *mx1, int *my1, int *npbmx,
+//                  int *ntmax, int *irc) {
+//   cpporder2lt(ppart,ppbuff,kpic,ncl,ihole,*idimp,*nppmx,*nx,*ny,*mx,
+//                *my,*mx1,*my1,*npbmx,*ntmax,irc);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 void cpporderf2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
@@ -3946,15 +3995,15 @@ void cpporderf2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-void cvpporder2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
-                   int *ihole, int *idimp, int *nppmx, int *nx, int *ny,
-                   int *mx, int *my, int *mx1, int *my1, int *npbmx,
-                   int *ntmax, int *irc) {
-   cvpporder2lt(ppart,ppbuff,kpic,ncl,ihole,*idimp,*nppmx,*nx,*ny,*mx,
-                *my,*mx1,*my1,*npbmx,*ntmax,irc);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//void cvpporder2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
+//                   int *ihole, int *idimp, int *nppmx, int *nx, int *ny,
+//                   int *mx, int *my, int *mx1, int *my1, int *npbmx,
+//                   int *ntmax, int *irc) {
+//   cvpporder2lt(ppart,ppbuff,kpic,ncl,ihole,*idimp,*nppmx,*nx,*ny,*mx,
+//                *my,*mx1,*my1,*npbmx,*ntmax,irc);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 void cvpporderf2lt_(float *ppart, float *ppbuff, int *kpic, int *ncl,
@@ -3977,18 +4026,18 @@ void caguard2l_(float *q, int *nx, int *ny, int *nxe, int *nye) {
    return;
 }
 
-/*--------------------------------------------------------------------*/
-void cvmpois22_(float complex *q, float complex *fxy, int *isign,
-                float complex *ffc, float *ax, float *ay, float *affp,
-                float *we, int *nx, int *ny, int *nxvh, int *nyv,
-                int *nxhd, int *nyhd) {
-   cvmpois22(q,fxy,*isign,ffc,*ax,*ay,*affp,we,*nx,*ny,*nxvh,*nyv,*nxhd,
-             *nyhd);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//void cvmpois22_(float complex *q, float complex *fxy, int *isign,
+//                float complex *ffc, float *ax, float *ay, float *affp,
+//                float *we, int *nx, int *ny, int *nxvh, int *nyv,
+//                int *nxhd, int *nyhd) {
+//   cvmpois22(q,fxy,*isign,ffc,*ax,*ay,*affp,we,*nx,*ny,*nxvh,*nyv,*nxhd,
+//             *nyhd);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
-void cwfft2rinit_(int *mixup, float complex *sct, int *indx, int *indy,
+void _cwfft2rinit_(int *mixup, float complex *sct, int *indx, int *indy,
                   int *nxhyd, int *nxyhd) {
    cwfft2rinit(mixup,sct,*indx,*indy,*nxhyd,*nxyhd);
    return;

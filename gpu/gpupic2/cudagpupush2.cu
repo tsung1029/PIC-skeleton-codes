@@ -2219,34 +2219,34 @@ __global__ void gpusum2(float a[], float d[], int nx) {
    return;
 }
 
-/*--------------------------------------------------------------------*/
-extern "C" void cgpuppush2l(float *ppart, float *fxy, int *kpic,
-                            float qbm, float dt, float *ek, int idimp,
-                            int nppmx, int nx, int ny, int mx, int my,
-                            int nxv, int nyv, int mx1, int mxy1,
-                            int ipbc) {
-/* Push Interface for C */
-   int n, m, ns;
-   dim3 dimBlock(nblock_size);
-   n = mxy1;
-   m = (n - 1)/maxgsx + 1;
-   n = n < maxgsx ? n : maxgsx;
-   dim3 dimGrid(n,m);
-   ns = 2*(mx + 1)*(my + 1)*sizeof(float);
-   n = nblock_size*sizeof(float);
-   ns = ns > n ? ns : n;
-   crc = cudaGetLastError();
-   gpuppush2l<<<dimGrid,dimBlock,ns>>>(ppart,fxy,kpic,qbm,dt,ek,idimp,
-                                       nppmx,nx,ny,mx,my,nxv,nyv,mx1,
-                                       mxy1,ipbc);
-   cudaThreadSynchronize();
-   crc = cudaGetLastError();
-   if (crc) {
-      printf("gpuppush2l error=%d:%s\n",crc,cudaGetErrorString(crc));
-      exit(1);
-   }
-   return;
-}
+///*--------------------------------------------------------------------*/
+//extern "C" void cgpuppush2l(float *ppart, float *fxy, int *kpic,
+//                            float qbm, float dt, float *ek, int idimp,
+//                            int nppmx, int nx, int ny, int mx, int my,
+//                            int nxv, int nyv, int mx1, int mxy1,
+//                            int ipbc) {
+///* Push Interface for C */
+//   int n, m, ns;
+//   dim3 dimBlock(nblock_size);
+//   n = mxy1;
+//   m = (n - 1)/maxgsx + 1;
+//   n = n < maxgsx ? n : maxgsx;
+//   dim3 dimGrid(n,m);
+//   ns = 2*(mx + 1)*(my + 1)*sizeof(float);
+//   n = nblock_size*sizeof(float);
+//   ns = ns > n ? ns : n;
+//   crc = cudaGetLastError();
+//   gpuppush2l<<<dimGrid,dimBlock,ns>>>(ppart,fxy,kpic,qbm,dt,ek,idimp,
+//                                       nppmx,nx,ny,mx,my,nxv,nyv,mx1,
+//                                       mxy1,ipbc);
+//   cudaThreadSynchronize();
+//   crc = cudaGetLastError();
+//   if (crc) {
+//      printf("gpuppush2l error=%d:%s\n",crc,cudaGetErrorString(crc));
+//      exit(1);
+//   }
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppushf2l(float *ppart, float *fxy, int *kpic,
@@ -2278,30 +2278,30 @@ extern "C" void cgpuppushf2l(float *ppart, float *fxy, int *kpic,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-extern "C" void cgpu2ppost2l(float *ppart, float *q, int *kpic,
-                             float qm, int nppmx, int idimp, int mx,
-                             int my, int nxv, int nyv, int mx1,
-                             int mxy1) {
-/* Deposit Interface for C */
-   int n, m, ns;
-   dim3 dimBlock(nblock_size);
-   n = mxy1;
-   m = (n - 1)/maxgsx + 1;
-   n = n < maxgsx ? n : maxgsx;
-   dim3 dimGrid(n,m);
-   ns = (mx + 1)*(my + 1)*sizeof(float);
-   crc = cudaGetLastError();
-   gpu2ppost2l<<<dimGrid,dimBlock,ns>>>(ppart,q,kpic,qm,nppmx,idimp,mx,
-                                        my,nxv,nyv,mx1,mxy1);
-   cudaThreadSynchronize();
-   crc = cudaGetLastError();
-   if (crc) {
-      printf("gpu2ppost2l error=%d:%s\n",crc,cudaGetErrorString(crc));
-      exit(1);
-   }
-   return;
-}
+///*--------------------------------------------------------------------*/
+//extern "C" void cgpu2ppost2l(float *ppart, float *q, int *kpic,
+//                             float qm, int nppmx, int idimp, int mx,
+//                             int my, int nxv, int nyv, int mx1,
+//                             int mxy1) {
+///* Deposit Interface for C */
+//   int n, m, ns;
+//   dim3 dimBlock(nblock_size);
+//   n = mxy1;
+//   m = (n - 1)/maxgsx + 1;
+//   n = n < maxgsx ? n : maxgsx;
+//   dim3 dimGrid(n,m);
+//   ns = (mx + 1)*(my + 1)*sizeof(float);
+//   crc = cudaGetLastError();
+//   gpu2ppost2l<<<dimGrid,dimBlock,ns>>>(ppart,q,kpic,qm,nppmx,idimp,mx,
+//                                        my,nxv,nyv,mx1,mxy1);
+//   cudaThreadSynchronize();
+//   crc = cudaGetLastError();
+//   if (crc) {
+//      printf("gpu2ppost2l error=%d:%s\n",crc,cudaGetErrorString(crc));
+//      exit(1);
+//   }
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpucaguard2l(float2 *qc, float *q, int nx, int ny,
@@ -2424,27 +2424,27 @@ extern "C" void cgpuppordf2l(float *ppart, float *ppbuff, int *kpic,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-extern "C"  void cgpupois22t(float2 *qt, float2 *fxyt, float2 *ffct,
-                             float *we, int nx, int ny, int nxvh,
-                             int nyv, int nxhd, int nyhd) {
-/* Poisson Solver Interface for C */
-   int nxh1, ns;
-   dim3 dimBlock(nblock_size);
-   nxh1 = nx/2 + 1;
-   dim3 dimGrid(nxh1);
-   ns = nblock_size*sizeof(float);
-   crc = cudaGetLastError();
-   gpupois22t<<<dimGrid,dimBlock,ns>>>(qt,fxyt,ffct,we,nx,ny,nxvh,nyv,
-                                       nxhd,nyhd);
-   cudaThreadSynchronize();
-   crc = cudaGetLastError();
-   if (crc) {
-      printf("gpupois22t error=%d:%s\n",crc,cudaGetErrorString(crc));
-      exit(1);
-   }
-   return;
-}
+///*--------------------------------------------------------------------*/
+//extern "C"  void cgpupois22t(float2 *qt, float2 *fxyt, float2 *ffct,
+//                             float *we, int nx, int ny, int nxvh,
+//                             int nyv, int nxhd, int nyhd) {
+///* Poisson Solver Interface for C */
+//   int nxh1, ns;
+//   dim3 dimBlock(nblock_size);
+//   nxh1 = nx/2 + 1;
+//   dim3 dimGrid(nxh1);
+//   ns = nblock_size*sizeof(float);
+//   crc = cudaGetLastError();
+//   gpupois22t<<<dimGrid,dimBlock,ns>>>(qt,fxyt,ffct,we,nx,ny,nxvh,nyv,
+//                                       nxhd,nyhd);
+//   cudaThreadSynchronize();
+//   crc = cudaGetLastError();
+//   if (crc) {
+//      printf("gpupois22t error=%d:%s\n",crc,cudaGetErrorString(crc));
+//      exit(1);
+//   }
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuwfft2rcs(float2 *f, float2 *g, int isign,
@@ -2721,26 +2721,26 @@ extern "C" void cgpusum2(float *a, float *sa, int nx) {
 }
 
 /* Interfaces to Fortran */
-
-/*--------------------------------------------------------------------*/
-extern "C" void cgpuppush2l_(unsigned long *gp_ppart,
-                             unsigned long *gp_fxy,
-                             unsigned long *gp_kpic,
-                             float *qbm, float *dt, 
-                             unsigned long *gp_ek, int *idimp,
-                             int *nppmx, int *nx, int *ny, int *mx,
-                             int *my, int *nxv, int *nyv, int *mx1,
-                             int *mxy1, int *ipbc) {
-   float *ppart, *fxy, *ek;
-   int *kpic;
-   ppart = (float *)*gp_ppart;
-   fxy = (float *)*gp_fxy;
-   kpic = (int *)*gp_kpic;
-   ek = (float *)*gp_ek;
-   cgpuppush2l(ppart,fxy,kpic,*qbm,*dt,ek,*idimp,*nppmx,*nx,*ny,*mx,*my,
-               *nxv,*nyv,*mx1,*mxy1,*ipbc);
-   return;
-}
+//
+///*--------------------------------------------------------------------*/
+//extern "C" void cgpuppush2l_(unsigned long *gp_ppart,
+//                             unsigned long *gp_fxy,
+//                             unsigned long *gp_kpic,
+//                             float *qbm, float *dt, 
+//                             unsigned long *gp_ek, int *idimp,
+//                             int *nppmx, int *nx, int *ny, int *mx,
+//                             int *my, int *nxv, int *nyv, int *mx1,
+//                             int *mxy1, int *ipbc) {
+//   float *ppart, *fxy, *ek;
+//   int *kpic;
+//   ppart = (float *)*gp_ppart;
+//   fxy = (float *)*gp_fxy;
+//   kpic = (int *)*gp_kpic;
+//   ek = (float *)*gp_ek;
+//   cgpuppush2l(ppart,fxy,kpic,*qbm,*dt,ek,*idimp,*nppmx,*nx,*ny,*mx,*my,
+//               *nxv,*nyv,*mx1,*mxy1,*ipbc);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppushf2l_(unsigned long *gp_ppart,
@@ -2767,21 +2767,21 @@ extern "C" void cgpuppushf2l_(unsigned long *gp_ppart,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-extern "C" void cgpu2ppost2l_(unsigned long *gp_ppart,
-                              unsigned long *gp_q,
-                              unsigned long *gp_kpic, float *qm,
-                              int *nppmx, int *idimp, int *mx, int *my,
-                              int *nxv, int *nyv, int *mx1, int *mxy1) {
-   float *ppart, *q;
-   int *kpic;
-   ppart = (float *)*gp_ppart;
-   q = (float *)*gp_q;
-   kpic = (int *)*gp_kpic;
-   cgpu2ppost2l(ppart,q,kpic,*qm,*nppmx,*idimp,*mx,*my,*nxv,*nyv,*mx1,
-                *mxy1);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//extern "C" void cgpu2ppost2l_(unsigned long *gp_ppart,
+//                              unsigned long *gp_q,
+//                              unsigned long *gp_kpic, float *qm,
+//                              int *nppmx, int *idimp, int *mx, int *my,
+//                              int *nxv, int *nyv, int *mx1, int *mxy1) {
+//   float *ppart, *q;
+//   int *kpic;
+//   ppart = (float *)*gp_ppart;
+//   q = (float *)*gp_q;
+//   kpic = (int *)*gp_kpic;
+//   cgpu2ppost2l(ppart,q,kpic,*qm,*nppmx,*idimp,*mx,*my,*nxv,*nyv,*mx1,
+//                *mxy1);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpucaguard2l_(unsigned long *gp_qc,
@@ -2852,22 +2852,22 @@ extern "C" void cgpuppordf2l_(unsigned long *gp_ppart,
    return;
 }
 
-/*--------------------------------------------------------------------*/
-extern "C"  void cgpupois22t_(unsigned long *gp_qt, 
-                              unsigned long *gp_fxyt,
-                              unsigned long *gp_ffct,
-                              unsigned long *gp_we, int *nx, int *ny,
-                              int *nxvh, int *nyv, int *nxhd,
-                              int *nyhd) {
-   float2 *qt, *fxyt, *ffct;
-   float *we;
-   qt = (float2 *)*gp_qt;
-   fxyt = (float2 *)*gp_fxyt;
-   ffct = (float2 *)*gp_ffct;
-   we = (float *)*gp_we;
-   cgpupois22t(qt,fxyt,ffct,we,*nx,*ny,*nxvh,*nyv,*nxhd,*nyhd);
-   return;
-}
+///*--------------------------------------------------------------------*/
+//extern "C"  void cgpupois22t_(unsigned long *gp_qt, 
+//                              unsigned long *gp_fxyt,
+//                              unsigned long *gp_ffct,
+//                              unsigned long *gp_we, int *nx, int *ny,
+//                              int *nxvh, int *nyv, int *nxhd,
+//                              int *nyhd) {
+//   float2 *qt, *fxyt, *ffct;
+//   float *we;
+//   qt = (float2 *)*gp_qt;
+//   fxyt = (float2 *)*gp_fxyt;
+//   ffct = (float2 *)*gp_ffct;
+//   we = (float *)*gp_we;
+//   cgpupois22t(qt,fxyt,ffct,we,*nx,*ny,*nxvh,*nyv,*nxhd,*nyhd);
+//   return;
+//}
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuwfft2rcs_(unsigned long *gp_f, unsigned long *gp_g,
