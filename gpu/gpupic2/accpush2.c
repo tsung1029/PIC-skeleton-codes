@@ -458,10 +458,16 @@ local data                                                            */
 /* if ((mx >= MXV) || (my >= MYV))   */
 /*    return;                        */
 /* loop over tiles */
-#pragma acc parallel loop gang vector vector_length(16) \
-private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,dx,dy,vx, \
-vy,sum1,sfxy) \
+//#pragma acc parallel loop gang vector vector_length(16) \
+//private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,dx,dy,vx, \
+//vy,sum1,sfxy) \
+//deviceptr(ppart,fxy,kpic,ek)
+#pragma acc parallel create(sfxy) \
 deviceptr(ppart,fxy,kpic,ek)
+{
+#pragma acc loop \
+private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,dx,dy,vx, \
+vy,sum1,sfxy)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -471,6 +477,7 @@ deviceptr(ppart,fxy,kpic,ek)
 /* load local fields from global array */
       nn = (mx < nx-noff ? mx : nx-noff) + 1;
       mm = (my < ny-moff ? my : ny-moff) + 1;
+#pragma acc loop vector independent collapse(2)
       for (j = 0; j < mm; j++) {
          for (i = 0; i < nn; i++) {
             sfxy[2*(i+mxv*j)] = fxy[2*(i+noff+nxv*(j+moff))];
@@ -479,6 +486,7 @@ deviceptr(ppart,fxy,kpic,ek)
       }
       sum1 = 0.0;
 /* loop over particles in tile */
+#pragma acc loop vector independent
       for (j = 0; j < npp; j++) {
 /* find interpolation weights */
          x = ppart[j+npoff];
@@ -539,6 +547,7 @@ deviceptr(ppart,fxy,kpic,ek)
       }
       ek[k] = 0.125f*sum1;
    }
+}
 /* normalize kinetic energy */
 //   *ek += 0.125f*sum2;
    return;
@@ -1419,9 +1428,14 @@ local data                                                            */
 /* if ((mx >= MXV) || (my >= MYV))   */
 /*    return;                        */
 /* loop over tiles */
-#pragma acc parallel loop gang worker vector vector_length(16) \
-private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq) \
-deviceptr(ppart,q,kpic)
+//#pragma acc parallel loop gang worker vector vector_length(16) \
+//private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq) \
+//deviceptr(ppart,q,kpic)
+#pragma acc parallel deviceptr(ppart,q,kpic) vector_length(16)
+{
+#pragma acc loop gang vector \
+private(k,noff,moff,npp,npoff,nn,mm,sq)
+//private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
    for (k = 0; k < mxy1; k++) {
       noff = k/mx1;
       moff = my*noff;
@@ -1429,12 +1443,13 @@ deviceptr(ppart,q,kpic)
       npp = kpic[k];
       npoff = idimp*nppmx*k;
 /* zero out local accumulator */
-//#pragma acc loop independent
+#pragma acc loop independent private(j)
       for (j = 0; j < mxv*(my+1); j++) {
          sq[j] = 0.0f;
       }
 /* loop over particles in tile */
-//#pragma acc loop independent
+#pragma acc loop independent \
+private(j,nn,mm,x,y,dxp,dyp,amx,amy)
       for (j = 0; j < npp; j++) {
 /* find interpolation weights */
          x = ppart[j+npoff];
@@ -1462,7 +1477,7 @@ deviceptr(ppart,q,kpic)
       mm = nyv - moff;
       nn = mx < nn ? mx : nn;
       mm = my < mm ? my : mm;
-//#pragma acc loop independent
+#pragma acc loop independent private(i,j)
       for (j = 1; j < mm; j++) {
          for (i = 1; i < nn; i++) {
             q[i+noff+nxv*(j+moff)] += sq[i+mxv*j];
@@ -1471,7 +1486,7 @@ deviceptr(ppart,q,kpic)
 /* deposit charge to edge points in global array */
       mm = nyv - moff;
       mm = my+1 < mm ? my+1 : mm;
-//#pragma acc loop independent
+#pragma acc loop independent private(i)
       for (i = 1; i < nn; i++) {
 #pragma acc atomic
          q[i+noff+nxv*moff] += sq[i];
@@ -1482,7 +1497,7 @@ deviceptr(ppart,q,kpic)
       }
       nn = nxv - noff;
       nn = mx+1 < nn ? mx+1 : nn;
-//#pragma acc loop independent
+#pragma acc loop independent private(j)
       for (j = 0; j < mm; j++) {
 #pragma acc atomic
          q[noff+nxv*(j+moff)] += sq[mxv*j];
@@ -1492,6 +1507,7 @@ deviceptr(ppart,q,kpic)
          }
       }
    }
+}
    return;
 #undef MXV
 #undef MYV
@@ -3042,6 +3058,7 @@ deviceptr(qt,fxyt,ffct,we)
 
       at1 = at1*(zt1*conjf(zt1));
       we[j] += (float) at1;
+      we[j] *= (float) (nx*ny);
    }
    }
 #pragma acc data create(sum1)
@@ -3071,12 +3088,11 @@ deviceptr(qt,fxyt,ffct,we) present(sum1)
       fxyt[k1+nyv+nxh1] = zero;
       sum1 += (double) (at1*(zt1*conjf(zt1)));
    }
-#pragma acc loop gang vector
-   for ( j = 1; j < nxh; j++ )
-      we[j] *= (float) (nx*ny);
    }
 
-#pragma acc parallel num_gangs(1) vector_length(1) \
+//#pragma acc parallel num_gangs(1) vector_length(1) \
+//deviceptr(we,fxyt) present(sum1) private(nxh1,k1)
+#pragma acc serial \
 deviceptr(we,fxyt) present(sum1) private(nxh1,k1)
    {
    we[0] = (float) (sum1) * (float) (nx*ny);
