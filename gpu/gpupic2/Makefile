@@ -111,9 +111,10 @@
 
 # Makefile PGI compiler with Linux
 
-FC90 = pgf90 -Mcuda -acc -Minfo=accel
-FC03 = pgf90 -Mcuda -acc -Minfo=accel
-CC = pgcc -acc -Minfo=accel -ta=tesla,managed,cuda9.2
+FC90 = pgf90 -acc -Minfo=accel -ta=tesla,cuda9.2
+FC03 = pgf90 -acc -Minfo=accel -ta=tesla,cuda9.2
+# CC = pgcc -acc -Minfo=accel -ta=nvidia,keepgpu,keepptx,nollvm
+CC = pgcc -acc -Minfo=accel -ta=tesla,cuda9.2
 
 OPTS90 = -O3
 OPTS90 = -O3 -r8
