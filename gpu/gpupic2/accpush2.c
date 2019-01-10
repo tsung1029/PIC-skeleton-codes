@@ -2970,9 +2970,9 @@ void cgpupois22t(float complex qt[], float complex fxyt[], float complex ffct[],
                int nyhd) {
 /* this subroutine solves 2d poisson's equation in fourier space for
    force/charge (or convolution of electric field over particle shape)
-   with periodic boundary conditions.
-   for isign = 0, input: isign,ax,ay,affp,nx,ny,nxvh,nyhd, output: ffc
-   for isign /= 0, input: q,ffc,isign,nx,ny,nxvh,nyhd, output: fxy,we
+   with periodic boundary conditions, without packed data.
+   vector length is second dimension
+   input: qt,ffct,nx,ny,nxvh,nyv,nxhd,nyhd, output: fxyt,we
    approximate flop count is: 26*nxc*nyc + 12*(nxc + nyc)
    where nxc = nx/2 - 1, nyc = ny/2 - 1
    equation used is:
@@ -3008,7 +3008,7 @@ local data                                                 */
    dny = 6.28318530717959/(float) ny;
    zero = 0.0 + 0.0*_Complex_I;
 
-#pragma acc parallel loop gang vector vector_length(16) \
+#pragma acc parallel loop \
 private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp) \
 deviceptr(qt,fxyt,ffct,we)
 //reduction(+:sum1)
@@ -3019,7 +3019,7 @@ deviceptr(qt,fxyt,ffct,we)
       jk = nyv*j;
       jk2 = jk*2;
       wp = 0.0;
-#pragma ivdep
+#pragma acc loop independent
       for (k = 1; k < nyh; k++) {
          k1 = nyv - k;
          at1 = crealf(ffct[k+jj])*cimagf(ffct[k+jj]);
@@ -3034,43 +3034,19 @@ deviceptr(qt,fxyt,ffct,we)
          at1 = at1*(zt1*conjf(zt1) + zt2*conjf(zt2));
          wp += (double) at1;
       }
+/* mode numbers ky = 0, ny/2 */
       at1 = crealf(ffct[jj])*cimagf(ffct[jj]);
-      at3 = at1*dnx;
+      at2 = at1*dkx;  
       zt1 = cimagf(qt[jk]) - crealf(qt[jk])*_Complex_I;
-      fxyt[jk2] = at3*zt1;
+      fxyt[jk2] = at2*zt1;
       fxyt[nyv+jk2] = zero;
       fxyt[nyh+jk2] = zero;
       fxyt[nyh+nyv+jk2] = zero;
-      at1 = at1*(zt1*conjf(zt1));
-      wp += (double) at1;
-      we[j] = (float) wp;
-   }
-   //wp = 0.0;
-/* mode numbers ky = 0, ny/2 */
-#pragma acc parallel vector_length(16) \
-private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp,sum1) \
-deviceptr(qt,fxyt,ffct,we)
-   {
-   k1 = nyh;
-#pragma acc loop gang vector //reduction(+:sum1)
-   for (j = 1; j < nxh; j++) {
-      jj = nyhd*j;
-      jk = nyv*j;
-      jk2 = 2*jk;
-      at1 = crealf(ffct[jj])*cimagf(ffct[jj]);
-      at2 = at1*dnx*(float) j;  
-      zt1 = cimagf(qt[jk]) - crealf(qt[jk])*_Complex_I;
-      zt3 = at3*zt1;
-      fxyt[jk] = zt3;
-      fxyt[nyv+jk2] = zero;
-      fxyt[k1+jk2] = zero;
-      fxyt[k1+nyv+jk2] = zero;
 
-      at1 = at1*(zt1*conjf(zt1));
-      we[j] += (float) at1;
-      we[j] *= (float) (nx*ny);
+      wp = (double) at1*(zt1*conjf(zt1));
+      we[j] = (float) (nx*ny) * (float) wp;
    }
-   }
+
 #pragma acc data create(sum1)
 {
 /* mode numbers kx = 0, nx/2 */
@@ -3079,7 +3055,6 @@ private(j,k,k1,jj,jk,jk2,dkx,at1,at2,at3,zt1,zt2,wp) \
 deviceptr(qt,fxyt,ffct,we) present(sum1)
    {
    nxh1 = 2*nyv*nxh;
-   sum1 = 0.0;
 #pragma acc loop gang vector reduction(+:sum1)
    for (k = 1; k < nyh; k++) {
       k1 = ny - k;
@@ -3091,7 +3066,7 @@ deviceptr(qt,fxyt,ffct,we) present(sum1)
       fxyt[k+nyv] = zt3;
       fxyt[k1] = zero;
 
-      fxyt[k1+nyv] = zt3;
+      fxyt[k1+nyv] = crealf(zt3) - cimagf(zt3);
       fxyt[k+nxh1] = zero;
       fxyt[k+nyv+nxh1] = zero;
       fxyt[k1+nxh1] = zero;
@@ -3100,13 +3075,12 @@ deviceptr(qt,fxyt,ffct,we) present(sum1)
    }
    }
 
-//#pragma acc parallel num_gangs(1) vector_length(1) \
-//deviceptr(we,fxyt) present(sum1) private(nxh1,k1)
 #pragma acc serial \
 deviceptr(we,fxyt) present(sum1) private(nxh1,k1)
    {
    we[0] = (float) (sum1) * (float) (nx*ny);
-   k1 = 2*nxvh*nyh;
+   k1 = nyh;
+   //k1 = 2*nxvh*nyh;
    nxh1 = 2*nyv*nxh;
    fxyt[0] = zero;
    fxyt[nyv] = zero;
