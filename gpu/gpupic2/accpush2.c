@@ -465,6 +465,7 @@ local data                                                            */
 #pragma acc parallel create(sfxy) \
 deviceptr(ppart,fxy,kpic,ek)
 {
+#pragma acc cache(sfxy)
 #pragma acc loop \
 private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,dx,dy,vx, \
 vy,sum1,sfxy)
@@ -1433,7 +1434,8 @@ local data                                                            */
 //deviceptr(ppart,q,kpic)
 #pragma acc parallel deviceptr(ppart,q,kpic) vector_length(16)
 {
-#pragma acc loop gang vector \
+#pragma acc cache(sq)
+#pragma acc loop gang \
 private(k,noff,moff,npp,npoff,nn,mm,sq)
 //private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
    for (k = 0; k < mxy1; k++) {
@@ -1462,22 +1464,30 @@ private(j,nn,mm,x,y,dxp,dyp,amx,amy)
          amx = qm - dxp;
          amy = 1.0f - dyp;
 /* deposit charge within tile to local accumulator */
-         x = sq[nn] + amx*amy;
-         y = sq[nn+1] + dxp*amy;
-         sq[nn] = x;
-         sq[nn+1] = y;
+//         x = sq[nn] + amx*amy;
+//         y = sq[nn+1] + dxp*amy;
+#pragma acc atomic
+         sq[nn] = sq[nn] + amx*amy;
+//         sq[nn] = x;
+#pragma acc atomic
+         sq[nn+1] = sq[nn+1] + dxp*amy;
+//         sq[nn+1] = y;
          nn += mxv;
-         x = sq[nn] + amx*dyp;
-         y = sq[nn+1] + dxp*dyp;
-         sq[nn] = x;
-         sq[nn+1] = y;
+//         x = sq[nn] + amx*dyp;
+//         y = sq[nn+1] + dxp*dyp;
+#pragma acc atomic
+         sq[nn] = sq[nn] + amx*dyp;
+//         x = sq[nn] + amx*dyp;
+#pragma acc atomic
+         sq[nn+1] = sq[nn+1] + dxp*dyp;
+//         y = sq[nn+1] + dxp*dyp;
       }
 /* deposit charge to interior points in global array */
       nn = nxv - noff;
       mm = nyv - moff;
       nn = mx < nn ? mx : nn;
       mm = my < mm ? my : mm;
-#pragma acc loop independent private(i,j)
+#pragma acc loop independent private(i,j) collapse(2)
       for (j = 1; j < mm; j++) {
          for (i = 1; i < nn; i++) {
             q[i+noff+nxv*(j+moff)] += sq[i+mxv*j];
