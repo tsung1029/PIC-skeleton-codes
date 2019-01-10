@@ -1432,7 +1432,7 @@ local data                                                            */
 //#pragma acc parallel loop gang worker vector vector_length(16) \
 //private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq) \
 //deviceptr(ppart,q,kpic)
-#pragma acc parallel deviceptr(ppart,q,kpic) vector_length(16)
+#pragma acc parallel deviceptr(ppart,q,kpic) vector_length(16) num_workers(32)
 {
 #pragma acc cache(sq)
 #pragma acc loop gang \
