@@ -111,10 +111,10 @@
 
 # Makefile PGI compiler with Linux
 
-FC90 = pgf90 -acc -Minfo=accel -ta=tesla,cuda9.2
-FC03 = pgf90 -acc -Minfo=accel -ta=tesla,cuda9.2
+FC90 = pgf90 -acc -Minfo=accel -ta=tesla,cuda10.0
+FC03 = pgf90 -acc -Minfo=accel -ta=tesla,cuda10.0
 # CC = pgcc -acc -Minfo=accel -ta=nvidia,keepgpu,keepptx,nollvm
-CC = pgcc -acc -Minfo=accel -ta=tesla,cuda9.2
+CC = pgcc -acc -Minfo=accel -ta=tesla,cuda10.0
 
 OPTS90 = -O3
 OPTS90 = -O3 -r8
@@ -127,7 +127,7 @@ OPTS03 = -O3 -Mbounds -r8 -Mstandard
 CCOPTS = -O3
 
 # # CUDA
-CUDAHOME = /opt/packages/cuda/9.2
+CUDAHOME = /opt/packages/cuda/10.0
 LOPTS =
 CULIBS = -L$(CUDAHOME)/lib64 -lcudart -lcufft
 NVOPTS = -O3 -arch sm_60
