@@ -162,10 +162,11 @@ fgpupic2 : fgpupic2.o gpulib2.o gpupush2.o gpufft2.o fpush2.o \
 	gpulib2.o gpupush2.o gpufft2.o fpush2.o gpulib2_h.o \
 	gpupush2_h.o gpufft2_h.o push2_h.o dtimer.o $(CULIBS)
 
-caccpic2 : cgpupic2.o gpulib2.o cudagpupush2.o gpufft2.o cpush2.o \
+caccpic2 : NVOPTS = -O3 -arch sm_60 -D_USE_OPENACC_
+caccpic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
            dtimer.o caccpush2.o
 	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
-	gpulib2.o cudagpupush2.o gpufft2.o cpush2.o dtimer.o $(CULIBS) -lm
+	gpulib2.o gpupush2.o gpufft2.o cpush2.o dtimer.o $(CULIBS) -lm
 
 cgpupic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
            dtimer.o
