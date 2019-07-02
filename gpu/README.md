@@ -1,6 +1,6 @@
 # PIC Skeleton Codes:  GPU
 
-##GPU Tutorial
+## GPU Tutorial
 
 Tutorial for Computing on GPUs: GPUTutorial
 
@@ -47,6 +47,8 @@ The goal for the next two weeks (until 7/5/2019) is to benchmark both the serial
 make -f Makefile.cori
 
 it will create a working binary code.  Then submit the program to the queue and run it.  (I think) after the run is finished a timing file is produced and you can record the timing results from Viktor's output files.
+
+
 
 
 ### Want to contact the developer?

@@ -2219,6 +2219,7 @@ __global__ void gpusum2(float a[], float d[], int nx) {
    return;
 }
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppush2l(float *ppart, float *fxy, int *kpic,
                             float qbm, float dt, float *ek, int idimp,
@@ -2247,6 +2248,7 @@ extern "C" void cgpuppush2l(float *ppart, float *fxy, int *kpic,
    }
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppushf2l(float *ppart, float *fxy, int *kpic,
@@ -2278,6 +2280,7 @@ extern "C" void cgpuppushf2l(float *ppart, float *fxy, int *kpic,
    return;
 }
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C" void cgpu2ppost2l(float *ppart, float *q, int *kpic,
                              float qm, int nppmx, int idimp, int mx,
@@ -2302,6 +2305,7 @@ extern "C" void cgpu2ppost2l(float *ppart, float *q, int *kpic,
    }
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpucaguard2l(float2 *qc, float *q, int nx, int ny,
@@ -2424,6 +2428,7 @@ extern "C" void cgpuppordf2l(float *ppart, float *ppbuff, int *kpic,
    return;
 }
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C"  void cgpupois22t(float2 *qt, float2 *fxyt, float2 *ffct,
                              float *we, int nx, int ny, int nxvh,
@@ -2445,6 +2450,7 @@ extern "C"  void cgpupois22t(float2 *qt, float2 *fxyt, float2 *ffct,
    }
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuwfft2rcs(float2 *f, float2 *g, int isign,
@@ -2722,6 +2728,7 @@ extern "C" void cgpusum2(float *a, float *sa, int nx) {
 
 /* Interfaces to Fortran */
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppush2l_(unsigned long *gp_ppart,
                              unsigned long *gp_fxy,
@@ -2741,6 +2748,7 @@ extern "C" void cgpuppush2l_(unsigned long *gp_ppart,
                *nxv,*nyv,*mx1,*mxy1,*ipbc);
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuppushf2l_(unsigned long *gp_ppart,
@@ -2767,6 +2775,7 @@ extern "C" void cgpuppushf2l_(unsigned long *gp_ppart,
    return;
 }
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C" void cgpu2ppost2l_(unsigned long *gp_ppart,
                               unsigned long *gp_q,
@@ -2782,6 +2791,7 @@ extern "C" void cgpu2ppost2l_(unsigned long *gp_ppart,
                 *mxy1);
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpucaguard2l_(unsigned long *gp_qc,
@@ -2852,6 +2862,7 @@ extern "C" void cgpuppordf2l_(unsigned long *gp_ppart,
    return;
 }
 
+#ifndef _USE_OPENACC_
 /*--------------------------------------------------------------------*/
 extern "C"  void cgpupois22t_(unsigned long *gp_qt, 
                               unsigned long *gp_fxyt,
@@ -2868,6 +2879,7 @@ extern "C"  void cgpupois22t_(unsigned long *gp_qt,
    cgpupois22t(qt,fxyt,ffct,we,*nx,*ny,*nxvh,*nyv,*nxhd,*nyhd);
    return;
 }
+#endif
 
 /*--------------------------------------------------------------------*/
 extern "C" void cgpuwfft2rcs_(unsigned long *gp_f, unsigned long *gp_g,
