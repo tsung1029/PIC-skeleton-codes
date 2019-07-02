@@ -187,9 +187,6 @@ dtimer.o : dtimer.c
 gpulib2.o : gpulib2.cu
 	nvcc $(NVOPTS) -c gpulib2.cu -I$(CUDAHOME)/include
 
-cudagpupush2.o : cudagpupush2.cu
-	nvcc $(NVOPTS) -c cudagpupush2.cu -I$(CUDAHOME)/include
-
 gpupush2.o : gpupush2.cu
 	nvcc $(NVOPTS) -c gpupush2.cu -I$(CUDAHOME)/include
 
