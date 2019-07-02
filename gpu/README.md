@@ -1,6 +1,6 @@
 # PIC Skeleton Codes:  GPU
 
-##GPU Tutorial
+## GPU Tutorial
 
 Tutorial for Computing on GPUs: GPUTutorial
 
@@ -39,6 +39,8 @@ The __second family__ uses CUDA Fortran on the NVIDIA GPU, with a tiling techniq
 
 1. 2D Parallel Electrostatic Spectral code:  gpufppic2
 2. 2-1/2D Parallel Electromagnetic Spectral code:  gpufpbpic2
+
+
 
 
 
