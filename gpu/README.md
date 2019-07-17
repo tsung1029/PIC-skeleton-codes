@@ -44,6 +44,16 @@ The __second family__ uses CUDA Fortran on the NVIDIA GPU, with a tiling techniq
 
 The goal for the next two weeks (until 7/5/2019) is to benchmark both the serial and the parallel versions of the code on the NERSC GPU cluster.  To compile the code, type
 
+salloc -C gpu -t 10 -N 1 -c 10 --gres=gpu:1 -A m1759
+
+This command gets you on one of the GPU's.  To load all the necessary modules, type the following commands
+
+module purge
+module load cuda pgi
+module load mvapich2
+
+This should be enough for you to compile (as of July 16, 2019, this does not work).  
+
 make -f Makefile.cori
 
 it will create a working binary code.  Then submit the program to the queue and run it.  (I think) after the run is finished a timing file is produced and you can record the timing results from Viktor's output files.
