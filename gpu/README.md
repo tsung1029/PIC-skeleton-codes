@@ -42,9 +42,10 @@ The __second family__ uses CUDA Fortran on the NVIDIA GPU, with a tiling techniq
 
 ### Instructions for Brian:
 
+(NOTE:  Usually the order for these commands do not matter, however, there is a bug in the system so the order for these commands matter here.  It should be fixed soon.)
+
 The goal for the next two weeks (until 7/5/2019) is to benchmark both the serial and the parallel versions of the code on the NERSC GPU cluster.  To compile the code, type
 
-salloc -C gpu -t 10 -N 1 -c 10 --gres=gpu:1 -A m1759
 
 This command gets you on one of the GPU's.  To load all the necessary modules, type the following commands
 
@@ -54,7 +55,11 @@ module load cuda pgi
 
 module load mvapich2
 
-This should be enough for you to compile (as of July 16, 2019, this does not work).  However, for gpupic2 and gpubpic2.  That should be enough.  
+You need to load the modules on the CPU nodes on Cori, then request a GPU node, using the command below.
+
+salloc -C gpu -t 10 -N 1 -c 10 --gres=gpu:1 -A m1759
+
+In each folder there is a file for compiling on Cori, to use it, type:  
 
 make -f Makefile.cori
 
