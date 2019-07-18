@@ -15,9 +15,9 @@ void dtimer(double *time, struct timeval *itime, int icntrl);
 int main(int argc, char *argv[]) {
 /* indx/indy = exponent which determines grid points in x/y direction: */
 /* nx = 2**indx, ny = 2**indy */
-   int indx =   9, indy =   9;
+   int indx =   11, indy =   11;
 /* npx/npy = number of electrons distributed in x/y direction */
-   int npx =  3072, npy =   3072;
+   int npx =  12288, npy =   12288;
 /* ndim = number of velocity coordinates = 3 */
    int ndim = 3;
 /* tend = time at end of simulation, in units of plasma frequency */
