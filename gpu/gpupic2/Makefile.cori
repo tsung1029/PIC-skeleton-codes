@@ -118,19 +118,19 @@
 
 # Makefile PGI compiler with Linux
 
-FC90 = pgf90 -acc -Minfo=accel 
-FC03 = pgf90 -acc -Minfo=accel
-CC = pgcc -acc -Minfo=accel 
+FC90 = pgf90 -acc -Minfo=accel -ta=tesla,cuda10.0
+FC03 = pgf90 -acc -Minfo=accel -ta=tesla,cuda10.0
+CC = pgcc -acc -Minfo=accel -ta=tesla,cuda10.0
 
 OPTS90 = -O3 
-OPTS90 = -O3 -r8
-OPTS90 = -O3 -Mbounds -r8 -Mstandard
+OPTS90 = -O3 -r4
+OPTS90 = -O3 -Mbounds -r4 -Mstandard
 
 OPTS03 = -O3
-OPTS03 = -O3 -r8
-OPTS03 = -O3 -Mbounds -r8 -Mstandard
+OPTS03 = -O3 -r4
+OPTS03 = -O3 -Mbounds -r4 -Mstandard
 
-CCOPTS = -O3 -c99
+CCOPTS = -O3 
 
 #CUDA
 # CUDAHOME = /u/local/cuda/5.5
@@ -161,7 +161,8 @@ NVOPTS = -O3 -arch sm_70
 
 # Linkage rules
 
-all : fgpupic2 cgpupic2 f03gpupic2 caccpic2
+cuda: fgpupic2 cgpupic2 f03gpupic2
+acc: caccpic2
 
 fgpupic2 : fgpupic2.o gpulib2.o gpupush2.o gpufft2.o fpush2.o \
            dtimer.o
@@ -170,10 +171,11 @@ fgpupic2 : fgpupic2.o gpulib2.o gpupush2.o gpufft2.o fpush2.o \
 	gpupush2_h.o gpufft2_h.o push2_h.o dtimer.o $(CULIBS)
 
 caccpic2 : NVOPTS = -O3 -arch sm_60 -D_USE_OPENACC_
-caccpic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
+caccpic2 : cgpupic2.o gpulib2.o gpufft2.o gpupush2.o cpush2.o \
            dtimer.o caccpush2.o
 	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
-	gpulib2.o gpupush2.o gpufft2.o cpush2.o dtimer.o $(CULIBS) -lm
+	gpulib2.o gpufft2.o gpupush2.o cpush2.o dtimer.o $(CULIBS) -lm
+
 
 cgpupic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
            dtimer.o
@@ -243,4 +245,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fgpupic2 cgpupic2 f03gpupic2 caccpic2
+	rm -f fgpupic2 cgpupic2 f03gpupic2
