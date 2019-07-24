@@ -51,6 +51,8 @@ This command gets you on one of the GPU's.  To load all the necessary modules, t
 
 module purge
 
+module esslurm
+
 module load cuda pgi
 
 module load mvapich2
@@ -61,9 +63,29 @@ salloc -C gpu -t 10 -N 1 -c 10 --gres=gpu:1 -A m1759
 
 In each folder there is a file for compiling on Cori, to use it, type:  
 
-make -f Makefile.cori
+make -f Makefile.cori clean
 
-it will create a working binary code.  Then submit the program to the queue and run it.  (I think) after the run is finished a timing file is produced and you can record the timing results from Viktor's output files.
+to make the binaries for Viktor's code, following the "clean" command you would type
+
+make -f Makefile.cori cuda
+
+to make the binary for Han's code, use the make command:
+
+make -f Makefile.cori acc
+
+it will create a working binary code.  Then run the code using the command:
+
+srun ./cgpupic2
+
+for the c code or 
+
+srun ./fgpupic2
+
+to run the fortran code and 
+
+srun ./f03gpupic2
+
+to run the code written in Fortran 2003
 
 
 
