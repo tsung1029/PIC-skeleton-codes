@@ -53,7 +53,7 @@ module purge
 
 module esslurm
 
-module load cuda pgi
+module load cuda/10.0.130 pgi/19.7
 
 module load mvapich2
 
