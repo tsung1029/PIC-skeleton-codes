@@ -162,11 +162,21 @@ NVOPTS = -O3 -arch sm_70
 all: cuda
 
 cuda : fgpubpic2 cgpubpic2 f03gpubpic2
+acc: caccpic2
+
 
 fgpubpic2 : fgpubpic2.o gpulib2.o gpubpush2.o gpufft2.o fbpush2.o dtimer.o
 	$(FC90) $(OPTS90) $(LOPTS) -o fgpubpic2 fgpubpic2.o \
 	gpulib2.o gpubpush2.o gpufft2.o fbpush2.o gpulib2_h.o gpubpush2_h.o \
 	gpufft2_h.o bpush2_h.o dtimer.o $(CULIBS)
+	
+	
+caccpic2 : NVOPTS = -O3 -arch sm_70 -D_USE_OPENACC_
+caccpic2 : cgpupic2.o gpulib2.o gpufft2.o gpupush2.o cpush2.o \
+           dtimer.o caccpush2.o
+	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
+	gpulib2.o gpufft2.o gpupush2.o cpush2.o dtimer.o $(CULIBS) -lm
+	
 
 cgpubpic2 : cgpubpic2.o gpulib2.o gpubpush2.o gpufft2.o cbpush2.o dtimer.o
 	$(CC) $(CCOPTS) $(LOPTS) -o cgpubpic2 cgpubpic2.o \
@@ -215,6 +225,9 @@ fbpush2.o : bpush2.f
 
 bpush2_h.o : bpush2_h.f90
 	$(FC90) $(OPTS90) -o bpush2_h.o -c bpush2_h.f90
+	
+caccbpush2.o : accbpush2.c
+	$(CC) $(CCOPTS) -o caccbpush2.o -c accbpush2.c
 
 cbpush2.o : bpush2.c
 	$(CC) $(CCOPTS) -o cbpush2.o -c bpush2.c
