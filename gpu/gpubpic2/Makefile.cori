@@ -162,7 +162,7 @@ NVOPTS = -O3 -arch sm_70
 all: cuda
 
 cuda : fgpubpic2 cgpubpic2 f03gpubpic2
-acc: caccpic2
+acc: caccbpic2
 
 
 fgpubpic2 : fgpubpic2.o gpulib2.o gpubpush2.o gpufft2.o fbpush2.o dtimer.o
@@ -171,11 +171,11 @@ fgpubpic2 : fgpubpic2.o gpulib2.o gpubpush2.o gpufft2.o fbpush2.o dtimer.o
 	gpufft2_h.o bpush2_h.o dtimer.o $(CULIBS)
 	
 	
-caccpic2 : NVOPTS = -O3 -arch sm_70 -D_USE_OPENACC_
-caccpic2 : cgpupic2.o gpulib2.o gpufft2.o gpupush2.o cpush2.o \
-           dtimer.o caccpush2.o
-	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
-	gpulib2.o gpufft2.o gpupush2.o cpush2.o dtimer.o $(CULIBS) -lm
+caccbpic2 : NVOPTS = -O3 -arch sm_70 -D_USE_OPENACC_
+caccbpic2 : cgpubpic2.o gpulib2.o caccbpush2.o gpufft2.o gpubpush2.o \
+           cbpush2.o dtimer.o 
+	$(CC) $(CCOPTS) $(LOPTS) -o caccbpic2 cgpubpic2.o caccbpush2.o \
+	gpulib2.o gpufft2.o gpubpush2.o cbpush2.o dtimer.o $(CULIBS) -lm
 	
 
 cgpubpic2 : cgpubpic2.o gpulib2.o gpubpush2.o gpufft2.o cbpush2.o dtimer.o
@@ -246,3 +246,4 @@ clean :
 
 clobber: clean
 	rm -f fgpubpic2 cgpubpic2 f03gpubpic2
+
