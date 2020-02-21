@@ -1,6 +1,6 @@
 /* C Library for Skeleton 2-1/2D Electromagnetic OpenACC/GPU PIC */
 /* Code                                                            */
-/* written by Brian Wilcox, UCLA */
+/* written by Frank S. Tsung & Brian Wilcox(summer 2019), UCLA */
 
 #include <stdlib.h>
 #include <stdio.h>
