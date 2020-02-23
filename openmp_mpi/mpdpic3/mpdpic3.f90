@@ -137,6 +137,18 @@
       real, dimension(2) :: tfft = 0.0
       double precision :: dtime
 !
+
+! DIAG
+! HDF5 output
+! sfield => 2d array for HDF5 dump
+      real*4, allocatable  :: sfield(:,:,:)
+! p, pp => parallel configuration needed for HDF5 dumps
+      type(parallel), target :: p
+      class(parallel), pointer :: pp => null()
+      type(hdf5file) :: file
+      integer ix,iy,iz
+! HDF5
+! DIAG
       irc = 0
 ! nvpp = number of shared memory nodes (0=default)
       nvpp = 0
@@ -178,6 +190,12 @@
          go to 3000
       endif
 !
+! DIAG
+! Initialize Diagnostics for HDF5/OpenPMD
+      call p%new()
+      pp => p
+! DIAG
+
 ! initialize data for MPI code
       allocate(edges(idps),nyzp(idds),noff(idds))
 ! calculate partition variables:
@@ -235,6 +253,10 @@
       allocate(mixup(nxhyz),sct(nxyzh))
       allocate(ss(mdim,nxeh,nzpmx))
       allocate(kpic(mxyzp1))
+! DIAG
+! allocate the array for diagnostics
+      allocate(sfield(nxe,nyzp(1),nyzp(2)))
+! DIAG
 !
 ! allocate data for MPI code
       allocate(bs(mdim,kxyp*kzyp,kzp),br(mdim,kxyp*kzyp,kzp))
@@ -702,6 +724,35 @@
       tfield = tfield + time
 !
       enddo
+!
+! AFTER the Darwin Iterations, here comes the diagnostics
+! This is untested placeholder for diagnostics.  I do
+! not promise you that this works
+! DIAG
+      if (store_cond) then
+         do ix=1,nx
+             do iy=1,nyzp(1)
+               do iz=1,nyzp(2)
+                   sfield(ix,iy,iz) = exyze(1,ix,iy,iz)
+               end do
+            end do
+         end do
+         write(*,*) 'write ex'
+         call file%new(iter=nloop, basePath='MS', axisLabels=(/'x','y','z'/), &
+     &   gridSpacing = (/ 1.0_4, 1.0_4, 1.0_4/), position=(/ 0.0_4, 0.0_4, 0.0_4 /), & 
+     &   gridGlobalOffset=(/ 0.0d0, 0.0d0, 0.0d0 /) , records='Ex', filenamebase = 'EF',  &
+     &   filepath='E-FIELD/' )
+!    &   gridGlobalOffset=(/0.0d0, 0.0d0/),&
+         call pwfield(pp,file,sfield,(/nx,ny,nz/),(/nx,nyzp(1),nyzp(2)/),(/0,noff(1),noff(2)/),ierr)
+         do ix=1,nx
+             do iy=1,nyp
+                 sfield(ix,iy) = cue(1,ix,iy)
+              end do
+         end do
+
+      endif
+
+
 !
 ! push particles with OpenMP: updates part, wke, and ihole
       wke = 0.0
