@@ -126,6 +126,18 @@ CCOPTS = -O3 -std=c99
 
 #
 
+# ************************************************
+# DIAGNOSTICS
+#
+OPENPMD_PATH = ../Fortran-OpenPMD-File-Writers/
+HDF_LIBPATH = -L/usr/local/lib -lhdf5_fortran -lhdf5_hl -lhdf5
+OPENPMD_MODS = $(OPENPMD_PATH)/parallel_class.o $(OPENPMD_PATH)/hdf5io_class.o
+
+#
+# DIAGNOSTICS
+# ************************************************
+
+
 # Linkage rules
 
 all : fmpdpic3
@@ -138,11 +150,15 @@ special: cmpdpic3_f
 #   fmpdpic3.o fmpdpush3.o fmpplib3.o fomplib.o mpdpush3_h.o mpplib3_h.o \
 #   omplib_h.o dtimer.o
 
+#
+# This version now supports OPENPMD
 # Version using Fortran90 mpplib3.f90
 fmpdpic3 : fmpdpic3.o fmpdpush3.o fmpplib3.o fomplib.o dtimer.o
 	$(MPIFC) $(OPTS90) $(LOPTS) -o fmpdpic3 \
     fmpdpic3.o fmpdpush3.o f90mpplib3.o fomplib.o mpdpush3_h.o omplib_h.o \
     dtimer.o
+# 
+# 
 
 cmpdpic3_f : cmpdpic3.o cmpdpush3_f.o cmpplib3_f.o complib_f.o fmpdpush3.o \
              fmpplib3.o fomplib.o dtimer.o
@@ -191,7 +207,7 @@ mpdpush3_h.o : mpdpush3_h.f90
 #	$(MPIFC) $(OPTS90) -o fmpdpic3.o -c mpdpic3.f90
 
 # Version using Fortran90 mpplib3.f90
-fmpdpic3.o : mpdpic3.f90 f90mpplib3.o mpdpush3_h.o omplib_h.o
+fmpdpic3.o : mpdpic3.f90 f90mpplib3.o mpdpush3_h.o omplib_h.o $(OPENPMD_PATH)/parallel_class.o $(OPENPMD_PATH)/hdf5io_class.o
 	$(MPIFC) $(OPTS90) -o fmpdpic3.o -c mpdpic3.f90
 
 cmpdpush3_f.o : mpdpush3_f.c
