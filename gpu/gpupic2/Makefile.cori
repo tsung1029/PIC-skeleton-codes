@@ -177,6 +177,13 @@ caccpic2 : cgpupic2.o gpulib2.o gpufft2.o gpupush2.o cpush2.o \
 	gpulib2.o gpufft2.o gpupush2.o cpush2.o dtimer.o $(CULIBS) -lm
 
 
+comppic2 : NVOPTS = -O3 -arch sm_70 -D_USE_OPENACC_
+comppic2 : cgpupic2.o gpulib2.o gpufft2.o gpupush2.o cpush2.o \
+           dtimer.o comppush2.o
+	$(CC) $(CCOPTS) $(LOPTS) -o caccpic2 cgpupic2.o caccpush2.o \
+	gpulib2.o gpufft2.o gpupush2.o cpush2.o dtimer.o $(CULIBS) -lm
+
+
 cgpupic2 : cgpupic2.o gpulib2.o gpupush2.o gpufft2.o cpush2.o \
            dtimer.o
 	$(CC) $(CCOPTS) $(LOPTS) -o cgpupic2 cgpupic2.o \
