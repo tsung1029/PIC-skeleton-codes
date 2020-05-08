@@ -742,6 +742,7 @@ local data                                                            */
 /*    return;                        */
 /* loop over tiles */
 #pragma omp target
+{
 #pragma omp parallel for \
 private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
    for (k = 0; k < mxy1; k++) {
@@ -809,9 +810,12 @@ private(i,j,k,noff,moff,npp,npoff,nn,mm,x,y,dxp,dyp,amx,amy,sq)
          }
       }
    }
+        
+}
    return;
 #undef MXV
 #undef MYV
+    }  // GPU target
 }
 
 /*--------------------------------------------------------------------*/
@@ -859,7 +863,8 @@ local data                                                            */
 /* find and count particles leaving tiles and determine destination */
 /* update ppart, ihole, ncl */
 /* loop over tiles */
-#pragma omp target
+    #pragma omp target
+    {
 #pragma omp parallel for \
 private(j,k,noff,moff,npp,nn,mm,ih,nh,ist,dx,dy,edgelx,edgely,edgerx, \
 edgery)
@@ -953,7 +958,6 @@ edgery)
 
 /* buffer particles that are leaving tile: update ppbuff, ncl */
 /* loop over tiles */
-#pragma omp target
 #pragma omp parallel for \
 private(i,j,k,isum,ist,nh,ip,j1,ii)
    for (k = 0; k < mxy1; k++) {
@@ -993,7 +997,6 @@ private(i,j,k,isum,ist,nh,ip,j1,ii)
 
 /* copy incoming particles from buffer into ppart: update ppart, kpic */
 /* loop over tiles */
-#pragma omp target
 #pragma omp parallel for \
 private(i,j,k,ii,kk,npp,kx,ky,kl,kr,kxl,kxr,ih,nh,ncoff,ist,j1,j2,ip,ks)
    for (k = 0; k < mxy1; k++) {
@@ -1082,6 +1085,7 @@ private(i,j,k,ii,kk,npp,kx,ky,kl,kr,kxl,kxr,ih,nh,ncoff,ist,j1,j2,ip,ks)
       }
       kpic[k] = npp;
    }
+    } // omp target back from GPU
    return;
 }
 
@@ -1125,6 +1129,7 @@ local data                                                            */
 /* buffer particles that are leaving tile: update ppbuff, ncl */
 /* loop over tiles */
 #pragma omp target
+    {
 #pragma omp parallel for \
 private(i,j,k,isum,ist,nh,ip,j1,ii)
    for (k = 0; k < mxy1; k++) {
@@ -1164,7 +1169,6 @@ private(i,j,k,isum,ist,nh,ip,j1,ii)
 
 /* copy incoming particles from buffer into ppart: update ppart, kpic */
 /* loop over tiles */
-#pragma omp target
 #pragma omp parallel for \
 private(i,j,k,ii,kk,npp,kx,ky,kl,kr,kxl,kxr,ih,nh,ncoff,ist,j1,j2,ip,ks)
    for (k = 0; k < mxy1; k++) {
@@ -1253,6 +1257,7 @@ private(i,j,k,ii,kk,npp,kx,ky,kl,kr,kxl,kxr,ih,nh,ncoff,ist,j1,j2,ip,ks)
       }
       kpic[k] = npp;
    }
+    } // end of openmp target directive
    return;
 }
 
@@ -1375,6 +1380,7 @@ local data                                                 */
 /* calculate force/charge and sum field energy */
 L30: sum1 = 0.0;
 #pragma omp target
+    {
 #pragma omp parallel for \
 private(j,k,k1,kk,kj,dky,at1,at2,at3,zt1,zt2,wp) \
 reduction(+:sum1)
@@ -1408,6 +1414,7 @@ reduction(+:sum1)
       wp += at1*(q[kj]*conjf(q[kj]));
       sum1 += wp;
    }
+    } // end of pragma omp target
    wp = 0.0;
 /* mode numbers ky = 0, ny/2 */
    k1 = 2*nxvh*nyh;

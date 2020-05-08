@@ -1,6 +1,6 @@
 # Particle-In-Cell Skeleton Codes (forked by FST)
 
-This fork of the PIC Skeleton code aims to explore the possibility of using openACC to program for Exascale supercomputers.
+This fork of the PIC Skeleton code aims to explore the possibility of using openACC and OpenMP offloading + OpenMP SIMD to program for Exascale supercomputers.
 
 Here are some useful links for those of us who are working on it.
 
