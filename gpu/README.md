@@ -14,7 +14,7 @@ These codes illustrate how to implement an optimal PIC algorithm on a GPU. It us
 
 The __first family__ uses CUDA C on the NVIDIA GPU, with a tiling technique for each thread block, and with SIMD vectorization within a block.
 
-1. 2D Parallel Electrostatic Spectral code:  gpupic2
+1. 2D Parallel Electrostatic Spectral code:  gpupic2 (contains ACC acceleration)
 2. 2-1/2D Parallel Electromagnetic Spectral code:  gpubpic2
 
 The __second family__ uses CUDA Fortran on the NVIDIA GPU, with a tiling technique for each thread block, and with SIMD vectorization within a block.
